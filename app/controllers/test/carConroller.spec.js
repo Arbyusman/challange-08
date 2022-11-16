@@ -98,6 +98,7 @@ describe("CarController", () => {
       });
     });
   });
+
   describe("#handleGetCar", () => {
     // return a car
     it("should call res.status(200) and res.Json with status and message", async () => {
@@ -149,7 +150,6 @@ describe("CarController", () => {
   });
 
   describe("#handleCreateCar", () => {
-    // create a car
     it("should call res.status(201) and response json", async () => {
       const mockCar = new Car({
         name: "Lambo",
@@ -230,261 +230,254 @@ describe("CarController", () => {
     });
   });
 
-  // describe("#handleRentCar", () => {
+  describe("handleRentCar", () => {
+    it("should rent a car", async () => {
+      const mockCar = new Car({
+        name: "Lambo",
+        price: "10000000",
+        size: "SMALL",
+        image:
+          "https://www.google.com/url?sa=i&url=https%3A%2F%2Fid.wikipedia.org%2Fwiki%2FBajaj&psig=AOvVaw2YLBkKGo8Z-OCJze25x5hf&ust=1668538058650000&source=images&cd=vfe&ved=0CBAQjRxqFwoTCPiQoOOqrvsCFQAAAAAdAAAAABAD",
+        isCurrentlyRented: false,
+        createdAt: "2022-11-1 09:44:35",
+        updatedAt: "2022-11-1 11:00:00",
+      });
 
-  //   it("should rent a car", async () => {
-  //     const mockCar = new Car({
-  //       name: "Mazda RX-1",
-  //       price: "300000",
-  //       size: "SMALL",
-  //       image:
-  //         "https://www.google.com/url?sa=i&url=https%3A%2F%2Fid.wikipedia.org%2Fwiki%2FBajaj&psig=AOvVaw2YLBkKGo8Z-OCJze25x5hf&ust=1668538058650000&source=images&cd=vfe&ved=0CBAQjRxqFwoTCPiQoOOqrvsCFQAAAAAdAAAAABAD",
+      const mockUserCar = new UserCar({
+        userId: 5,
+        carId: 1,
+        rentStartedAt: "2022-11-1 09:44:35",
+        rentEndedAt: "2022-11-2 09:44:35"
+      });
 
-  //       isCurrentlyRented: false,
-  //       createdAt: "2022-11-1 11:00:00",
-  //       updatedAt: "2022-11-2 11:00:00",
-  //     });
+      const mockCarModel = {
+        findByPk: jest.fn().mockReturnValue(mockCar),
+      };
 
-  //     const mockUserCar = new UserCar({
-  //       userId: 5,
-  //       carId: 1,
-  //       rentStartedAt: "2022-11-1 11:00:00",
-  //       rentEndedAt: "2022-11-3 11:00:00",
-  //     });
+      const mockUserCarModel = {
+        findOne: jest.fn().mockReturnValue(null),
+        create: jest.fn().mockReturnValue({
+          userId: mockUserCar.userId,
+          carId: mockUserCar.carId,
+          rentStartedAt: mockUserCar.rentStartedAt,
+          rentEndedAt: mockUserCar.rentEndedAt,
+        }),
+      };
 
-  //     const mockCarModel = {
-  //       findByPk: jest.fn().mockReturnValue(mockCar),
-  //     };
+      const mockRequest = {
+        body: {
+          rentStartedAt: "2022-11-1 09:44:35",
+          rentEndedAt: "2022-11-2 09:44:35"
+        },
+        params: {
+          id: 1,
+        },
+        user: {
+          id: 5,
+        },
+      };
 
-  //     const mockUserCarModel = {
-  //       findOne: jest.fn().mockReturnValue(null),
-  //       create: jest.fn().mockReturnValue({
-  //         userId: mockUserCar.userId,
-  //         carId: mockUserCar.carId,
-  //         rentStartedAt: mockUserCar.rentStartedAt,
-  //         rentEndedAt: mockUserCar.rentEndedAt,
-  //       }),
-  //     };
+      const mockResponse = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn().mockReturnThis(),
+      };
 
-  //     const mockRequest = {
-  //       body: {
-  //         rentStartedAt: "2022-11-1 11:00:00",
-  //         rentEndedAt: "2022-11-3 11:00:00",
-  //       },
-  //       params: {
-  //         id: 1,
-  //       },
-  //       user: {
-  //         id: 5,
-  //       },
-  //     };
+      const mockNext = jest.fn();
 
-  //     const mockResponse = {
-  //       status: jest.fn().mockReturnThis(),
-  //       json: jest.fn().mockReturnThis(),
-  //     };
+      const carController = new CarController({
+        carModel: mockCarModel,
+        userCarModel: mockUserCarModel,
+      });
 
-  //     const mockNext = jest.fn();
+      await carController.handleRentCar(mockRequest, mockResponse, mockNext);
 
-  //     const carController = new CarController({
-  //       carModel: mockCarModel,
-  //       userCarModel: mockUserCarModel,
-  //     });
+      expect(mockCarModel.findByPk).toHaveBeenCalledWith(mockRequest.params.id);
+      expect(mockUserCarModel.findOne).toHaveBeenCalledWith({
+        where: {
+          carId: mockCar.id,
+          rentStartedAt: {
+            [Op.gte]: mockRequest.body.rentStartedAt,
+          },
+          rentEndedAt: {
+            [Op.lte]: mockRequest.body.rentEndedAt,
+          },
+        },
+      });
+      expect(mockUserCarModel.create).toHaveBeenCalledWith({
+        userId: mockRequest.user.id,
+        carId: mockCar.id,
+        rentStartedAt: mockRequest.body.rentStartedAt,
+        rentEndedAt: mockRequest.body.rentEndedAt,
+      });
+    });
 
-  //     await carController.handleRentCar(mockRequest, mockResponse, mockNext);
-  //     expect(mockResponse.status).toHaveBeenCalledWith(201);
+    // it("should return error status 422", async () => {
+    //   const mockCar = new Car({
+    //     carId: 1,
+    //     name: "Lambo",
+    //     price: "10000000",
+    //     size: "SMALL",
+    //     image:
+    //       "https://www.google.com/url?sa=i&url=https%3A%2F%2Fid.wikipedia.org%2Fwiki%2FBajaj&psig=AOvVaw2YLBkKGo8Z-OCJze25x5hf&ust=1668538058650000&source=images&cd=vfe&ved=0CBAQjRxqFwoTCPiQoOOqrvsCFQAAAAAdAAAAABAD",
+    //     isCurrentlyRented: false,
+    //     createdAt: "2022-11-1 09:44:35",
+    //     updatedAt: "2022-11-1 11:00:00",
+    //   });
 
-  //     expect(mockCarModel.findByPk).toHaveBeenCalledWith(mockRequest.params.id);
-  //     expect(mockUserCarModel.findOne).toHaveBeenCalledWith({
-  //       where: {
-  //         carId: mockCar.id,
-  //         rentStartedAt: {
-  //           [Op.gte]: mockRequest.body.rentStartedAt,
-  //         },
-  //         rentEndedAt: {
-  //           [Op.lte]: mockRequest.body.rentEndedAt,
-  //         },
-  //       },
-  //     });
-  //     expect(mockUserCarModel.create).toHaveBeenCalledWith({
-  //       userId: mockRequest.user.id,
-  //       carId: mockCar.id,
-  //       rentStartedAt: mockRequest.body.rentStartedAt,
-  //       rentEndedAt: mockRequest.body.rentEndedAt,
-  //     });
-  //   });
+    //   const mockUserCar = new UserCar({
+    //     userId: 5,
+    //     carId: 1,
+    //     rentStartedAt: "2022-11-1 09:44:35",
+    //     rentEndedAt:  "2022-11-2 09:44:35",
+    //   });
 
-  //   it("should return error status 422", async () => {
-  //     const mockCar = new Car({
-  //       name: "Mazda RX-1",
-  //       price: "300000",
-  //       size: "SMALL",
-  //       image:
-  //         "https://www.google.com/url?sa=i&url=https%3A%2F%2Fid.wikipedia.org%2Fwiki%2FBajaj&psig=AOvVaw2YLBkKGo8Z-OCJze25x5hf&ust=1668538058650000&source=images&cd=vfe&ved=0CBAQjRxqFwoTCPiQoOOqrvsCFQAAAAAdAAAAABAD",
+    //   const mockCarModel = {
+    //     findByPk: jest.fn().mockReturnValue(mockCar),
+    //   };
 
-  //       isCurrentlyRented: false,
-  //       createdAt: "2022-11-1 11:00:00",
-  //       updatedAt: "2022-11-2 11:00:00",
-  //     });
+    //   const mockUserCarModel = {
+    //     findOne: jest.fn().mockReturnValue(mockUserCar),
+    //   };
 
-  //     const mockUserCar = new UserCar({
-  //       userId: 5,
-  //       carId: 1,
-  //       rentStartedAt: "2022-11-1 11:00:00",
-  //       rentEndedAt: "2022-11-3 11:00:00",
-  //     });
+    //   const mockRequest = {
+    //     body: {
+    //       rentStartedAt: "2022-11-1 09:44:35",
+    //       rentEndedAt:  "2022-11-2 09:44:35",
+    //     },
+    //     params: {
+    //       id: 1,
+    //     },
+    //     user: {
+    //       id: 5,
+    //     },
+    //   };
 
-  //     const mockCarModel = {
-  //       findByPk: jest.fn().mockReturnValue(mockCar),
-  //     };
+    //   const mockResponse = {
+    //     status: jest.fn().mockReturnThis(),
+    //     json: jest.fn().mockReturnThis(),
+    //   };
 
-  //     const mockUserCarModel = {
-  //       findOne: jest.fn().mockReturnValue(mockUserCar),
-  //     };
+    //   const mockNext = jest.fn();
 
-  //     const mockRequest = {
-  //       body: {
-  //         rentStartedAt: "2022-11-1 11:00:00",
-  //         rentEndedAt: "2022-11-3 11:00:00",
-  //       },
-  //       params: {
-  //         id: 1,
-  //       },
-  //       user: {
-  //         id: 5,
-  //       },
-  //     };
+    //   const carController = new CarController({
+    //     carModel: mockCarModel,
+    //     userCarModel: mockUserCarModel,
+    //   });
 
-  //     const mockResponse = {
-  //       status: jest.fn().mockReturnThis(),
-  //       json: jest.fn().mockReturnThis(),
-  //     };
+    //   const error = new CarAlreadyRentedError(mockCar);
 
-  //     const mockNext = jest.fn();
+    //   await carController.handleRentCar(mockRequest, mockResponse, mockNext);
 
-  //     const carController = new CarController({
-  //       carModel: mockCarModel,
-  //       userCarModel: mockUserCarModel,
-  //     });
+    //   expect(mockResponse.status).toHaveBeenCalledWith(422);
+    //   expect(mockResponse.json).toHaveBeenCalledWith(error);
+    // });
+  });
 
-  //     const error = new CarAlreadyRentedError(mockCar);
+  describe("handleUpdateCar", () => {
+    // it("should update a car and status 200", async () => {
+    //   const mockCar = new Car({
+    //     id: 1,
+    //     name: "Lambo",
+    //     price: "10000000",
+    //     size: "SMALL",
+    //     image:
+    //       "https://www.google.com/url?sa=i&url=https%3A%2F%2Fid.wikipedia.org%2Fwiki%2FBajaj&psig=AOvVaw2YLBkKGo8Z-OCJze25x5hf&ust=1668538058650000&source=images&cd=vfe&ved=0CBAQjRxqFwoTCPiQoOOqrvsCFQAAAAAdAAAAABAD",
+    //     isCurrentlyRented: false,
+    //     createdAt: "2022-11-1 09:44:35",
+    //     updatedAt: "2022-11-2 11:00:00",
+    //   });
 
-  //     await carController.handleRentCar(mockRequest, mockResponse, mockNext);
+    //   const mockCarModel = {
+    //     update: jest.fn().mockReturnValue(mockCar),
+    //   };
 
-  //     expect(mockResponse.status).toHaveBeenCalledWith(422);
-  //     expect(mockResponse.json).toHaveBeenCalledWith(error);
-  //   });
-  // });
+    //   mockUserCar = new UserCar({
+    //     userId: 5,
+    //     carId: 1,
+    //     rentStartedAt: "2022-11-1 09:44:35",
+    //     rentEndedAt: "2022-11-1 09:44:35",
+    //   });
 
-  // describe("handleUpdateCar", () => {
-  //   it("should update a car and status 200", async () => {
-  //     const mockCar = new Car({
-  //       id: 1,
-  //       name: "Mazda RX-1",
-  //       price: "300000",
-  //       size: "SMALL",
-  //       image:
-  //         "https://www.google.com/url?sa=i&url=https%3A%2F%2Fid.wikipedia.org%2Fwiki%2FBajaj&psig=AOvVaw2YLBkKGo8Z-OCJze25x5hf&ust=1668538058650000&source=images&cd=vfe&ved=0CBAQjRxqFwoTCPiQoOOqrvsCFQAAAAAdAAAAABAD",
+    //   const mockUserCarModel = {
+    //     findOne: jest.fn().mockReturnValue(mockUserCar),
+    //   };
 
-  //       isCurrentlyRented: false,
-  //       createdAt: "2022-11-1 11:00:00",
-  //       updatedAt: "2022-11-2 11:00:00",
-  //     });
+    //   const mockRequest = {
+    //     params: {
+    //       id: 1,
+    //     },
+    //     body: {
+    //       name: "Bajai",
+    //       price: "100000",
+    //       size: "SMALL",
+    //       image:
+    //         "https://www.google.com/url?sa=i&url=https%3A%2F%2Fid.wikipedia.org%2Fwiki%2FBajaj&psig=AOvVaw2YLBkKGo8Z-OCJze25x5hf&ust=1668538058650000&source=images&cd=vfe&ved=0CBAQjRxqFwoTCPiQoOOqrvsCFQAAAAAdAAAAABAD",
+    //       isCurrentlyRented: false,
+    //     },
+    //   };
+    //   const mockResponse = {
+    //     status: jest.fn().mockReturnThis(),
+    //     json: jest.fn().mockReturnThis(),
+    //   };
 
-  //     const mockCarModel = {
-  //       update: jest.fn().mockReturnValue(mockCar),
-  //     };
+    //   const carController = new CarController({
+    //     carModel: mockCarModel,
+    //   });
 
-  //     mockUserCar = new UserCar({
-  //       userId: 1,
-  //       carId: 1,
-  //       rentStartedAt: "2022-11-1 11:00:00",
-  //       rentEndedAt: "2022-11-3 11:00:00",
-  //       createdAt: "2022-11-1 11:00:00",
-  //       updatedAt: "2022-11-2 11:00:00",
-  //     });
+    //   await carController.handleUpdateCar(mockRequest, mockResponse);
 
-  //     const mockUserCarModel = {
-  //       findOne: jest.fn().mockReturnValue(mockUserCar),
-  //     };
+    //   expect(mockCarModel.update).toEqual(mockRequest);
+    //   expect(mockResponse.status).toHaveBeenCalledWith(200);
+    //   expect(mockResponse.json).mockReturnValue(mockCar);
 
-  //     const mockRequest = {
-  //       params: {
-  //         id: 1,
-  //       },
-  //       body: {
-  //         name: "Mazda RX-1",
-  //         price: "300000",
-  //         size: "SMALL",
-  //         image:
-  //           "https://www.google.com/url?sa=i&url=https%3A%2F%2Fid.wikipedia.org%2Fwiki%2FBajaj&psig=AOvVaw2YLBkKGo8Z-OCJze25x5hf&ust=1668538058650000&source=images&cd=vfe&ved=0CBAQjRxqFwoTCPiQoOOqrvsCFQAAAAAdAAAAABAD",
-  //       },
-  //     };
-  //     const mockResponse = {
-  //       status: jest.fn().mockReturnThis(),
-  //       json: jest.fn().mockReturnThis(),
-  //     };
+    //   expect(mockUserCarModel.findOne).toHaveBeenCalledWith({
+    //     where: {
+    //       carId: mockRequest.params.id,
+    //     },
+    //   });
+    // });
 
-  //     const carController = new CarController({
-  //       carModel: mockCarModel,
-  //       userCarModel: mockUserCarModel,
-  //     });
+    it("should return error 422", async () => {
+      const mockCarModel = {
+        update: jest.fn().mockImplementation(() => {
+          throw new Error("error");
+        }),
+      };
 
-  //     await carController.handleUpdateCar(mockRequest, mockResponse);
+      const mockRequest = {
+        params: {
+          id: 1,
+        },
+        body: {
+          name: "Bajai",
+          price: "100000",
+          size: "SMALL",
+          image:
+            "https://www.google.com/url?sa=i&url=https%3A%2F%2Fid.wikipedia.org%2Fwiki%2FBajaj&psig=AOvVaw2YLBkKGo8Z-OCJze25x5hf&ust=1668538058650000&source=images&cd=vfe&ved=0CBAQjRxqFwoTCPiQoOOqrvsCFQAAAAAdAAAAABAD",
+          isCurrentlyRented: false,
+        },
+      };
 
-  //     expect(mockUserCarModel.findOne).toHaveBeenCalledWith({
-  //       where: {
-  //         carId: mockRequest.params.id,
-  //       },
-  //     });
-  //     expect(mockCarModel.update).toHaveBeenCalledWith(mockRequest);
-  //     expect(mockResponse.status).toHaveBeenCalledWith(200);
-  //     expect(mockResponse.json).toHaveBeenCalledWith(mockCar);
+      const mockResponse = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn().mockReturnThis(),
+      };
 
-  //   });
+      const carController = new CarController({
+        carModel: mockCarModel,
+      });
 
-  //   it("should return error", async () => {
-  //     const mockCarModel = {
-  //       update: jest.fn().mockImplementation(() => {
-  //         throw new Error("error");
-  //       }),
-  //     };
+      await carController.handleUpdateCar(mockRequest, mockResponse);
 
-  //     const mockRequest = {
-  //       params: {
-  //         id: 1,
-  //       },
-  //       body: {
-  //         name: "Mazda RX-1",
-  //         price: "300000",
-  //         size: "SMALL",
-  //         image:
-  //           "https://www.google.com/url?sa=i&url=https%3A%2F%2Fid.wikipedia.org%2Fwiki%2FBajaj&psig=AOvVaw2YLBkKGo8Z-OCJze25x5hf&ust=1668538058650000&source=images&cd=vfe&ved=0CBAQjRxqFwoTCPiQoOOqrvsCFQAAAAAdAAAAABAD",
-
-  //         isCurrentlyRented: false,
-  //       },
-  //     };
-
-  //     const mockResponse = {
-  //       status: jest.fn().mockReturnThis(),
-  //       json: jest.fn().mockReturnThis(),
-  //     };
-
-  //     const carController = new CarController({
-  //       carModel: mockCarModel,
-  //     });
-
-  //     await carController.handleUpdateCar(mockRequest, mockResponse);
-
-  //     expect(mockResponse.status).toHaveBeenCalledWith(422);
-  //     expect(mockResponse.json).toHaveBeenCalledWith({
-  //       error: {
-  //         name: expect.any(String),
-  //         message: expect.any(String),
-  //       },
-  //     });
-  //   });
-  // });
+      expect(mockResponse.status).toHaveBeenCalledWith(422);
+      expect(mockResponse.json).toHaveBeenCalledWith({
+        error: {
+          name: expect.any(String),
+          message: expect.any(String),
+        },
+      });
+    });
+  });
 
   describe("#handleDeleteCar", () => {
     it("should delete a car", async () => {
