@@ -121,7 +121,7 @@ class AuthenticationController extends ApplicationController {
     const user = await this.userModel.findByPk(req.user.id);
 
     if (!user) {
-      const err = new RecordNotFoundError(this.userModel.name);
+      const err = new RecordNotFoundError(req.user.name);
       res.status(404).json(err)
       return;
     }
@@ -129,7 +129,7 @@ class AuthenticationController extends ApplicationController {
     const role = await this.roleModel.findByPk(user.roleId); 
 
     if (!role) {
-      const err = new RecordNotFoundError(this.roleModel.name);
+      const err = new RecordNotFoundError(user.user.name);
       res.status(404).json(err)
       return;
     }

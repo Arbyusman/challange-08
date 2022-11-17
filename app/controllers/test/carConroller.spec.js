@@ -247,7 +247,7 @@ describe("CarController", () => {
         userId: 5,
         carId: 1,
         rentStartedAt: "2022-11-1 09:44:35",
-        rentEndedAt: "2022-11-2 09:44:35"
+        rentEndedAt: "2022-11-2 09:44:35",
       });
 
       const mockCarModel = {
@@ -267,7 +267,7 @@ describe("CarController", () => {
       const mockRequest = {
         body: {
           rentStartedAt: "2022-11-1 09:44:35",
-          rentEndedAt: "2022-11-2 09:44:35"
+          rentEndedAt: "2022-11-2 09:44:35",
         },
         params: {
           id: 1,
@@ -311,9 +311,8 @@ describe("CarController", () => {
       });
     });
 
-    // it("should return error status 422", async () => {
-    //   const mockCar = new Car({
-    //     carId: 1,
+    // it("should res.status(422) and CarAlreadyRentedError", async () => {
+    //   const mockCar = {
     //     name: "Lambo",
     //     price: "10000000",
     //     size: "SMALL",
@@ -322,54 +321,49 @@ describe("CarController", () => {
     //     isCurrentlyRented: false,
     //     createdAt: "2022-11-1 09:44:35",
     //     updatedAt: "2022-11-1 11:00:00",
-    //   });
-
-    //   const mockUserCar = new UserCar({
+    //   };
+    //   const mockUserCar = {
     //     userId: 5,
     //     carId: 1,
     //     rentStartedAt: "2022-11-1 09:44:35",
-    //     rentEndedAt:  "2022-11-2 09:44:35",
-    //   });
-
-    //   const mockCarModel = {
-    //     findByPk: jest.fn().mockReturnValue(mockCar),
+    //     rentEndedAt: "2022-11-2 09:44:35",
     //   };
 
-    //   const mockUserCarModel = {
-    //     findOne: jest.fn().mockReturnValue(mockUserCar),
-    //   };
-
-    //   const mockRequest = {
+    //   const mockReq = {
     //     body: {
     //       rentStartedAt: "2022-11-1 09:44:35",
-    //       rentEndedAt:  "2022-11-2 09:44:35",
+    //       rentEndedAt: null,
     //     },
     //     params: {
     //       id: 1,
     //     },
     //     user: {
-    //       id: 5,
+    //       id: 1,
     //     },
     //   };
 
-    //   const mockResponse = {
+    //   const mockRes = {
     //     status: jest.fn().mockReturnThis(),
     //     json: jest.fn().mockReturnThis(),
     //   };
-
     //   const mockNext = jest.fn();
-
-    //   const carController = new CarController({
+    //   const mockCarModel = {
+    //     findByPk: jest.fn().mockReturnValue(mockCar),
+    //   };
+    //   const mockUserCarModel = {
+    //     findOne: jest.fn().mockReturnValue(true),
+    //     create: jest.fn().mockReturnValue(mockUserCar),
+    //   };
+    //   const controller = new CarController({
     //     carModel: mockCarModel,
     //     userCarModel: mockUserCarModel,
     //   });
 
-    //   const error = new CarAlreadyRentedError(mockCar);
+    //   await controller.handleRentCar(mockReq, mockRes, mockNext);
+    //   const err = new CarAlreadyRentedError(mockCar);
 
-    //   await carController.handleRentCar(mockRequest, mockResponse, mockNext);
-
-    //   expect(mockResponse.status).toHaveBeenCalledWith(422);
-    //   expect(mockResponse.json).toHaveBeenCalledWith(error);
+    //   expect(mockRes.status).toHaveBeenCalledWith(422);
+    //   expect(mockRes.json).toHaveBeenCalledWith(err);
     // });
   });
 

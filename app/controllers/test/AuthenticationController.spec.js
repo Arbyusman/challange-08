@@ -1,6 +1,10 @@
 const AuthenticationController = require("../AuthenticationController");
 const { User, Role } = require("../../models");
-const { WrongPasswordError,RecordNotFoundError } = require("../../errors");
+const {
+  WrongPasswordError,
+  RecordNotFoundError,
+  InsufficientAccessError,
+} = require("../../errors");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 
@@ -22,55 +26,120 @@ describe("AuthenticationController", () => {
   });
 
   describe("#authorize", () => {
-
-    it("should call res.status(401) and res.Json with status and message", async () => {
-      const mockUser = new User({
+    it("should run next function .", async () => {
+      const mockUser = {
         id: 2,
         name: "Arby",
         email: "Arby@binar.co.id",
-        encryptedPassword: "$2jakdbqudqiuy7981y9ge9g1dnqdiq9112g.dkah",
+        encryptedPassword:
+          "$2a$10$a/Nv0ULUmsfDUDbgf7991uENTqBMEA0LbcUcQ3U4xElPZumsV.Kmy",
         roleId: 1,
-      });
-
-      const mockRole = new Role({ id: 1, name: "CUSTOMER" });
-
-      const mockRequest = {
-        headers: {
-          authorization: "Bearer",
-        },
       };
-      const mockNext = {};
+      const mockRole = { id: 1, name: "COSTUMER" };
 
-      const mockResponse = {
-        status: jest.fn().mockReturnThis(),
-        json: jest.fn().mockReturnThis(),
-      };
+      const roleModel = jest.fn().mockReturnValue(null);
+      const userModel = jest.fn().mockReturnValue(null);
 
-
-      const authenticationController = new AuthenticationController({
-        userModel: mockUser,
-        roleModel: mockRole,
+      const controller = new AuthenticationController({
+        roleModel,
+        userModel,
         bcrypt,
         jwt,
       });
+      const mockToken = controller.createTokenFromUser(mockUser, mockRole);
+      const mockReq = {
+        headers: {
+          authorization: "Bearer " + mockToken,
+        },
+      };
+      const mockNext = jest.fn();
 
-      authenticationController.authorize("CUSTOMER")(
-        mockRequest,
-        mockResponse,
-        mockNext
-      );
+      const authorizeCustomer = controller.authorize("COSTUMER");
+      await authorizeCustomer(mockReq, {}, mockNext);
 
-      expect(mockResponse.status).toHaveBeenCalledWith(401);
-      expect(mockResponse.json).toHaveBeenCalledWith({
+      expect(mockNext).toHaveBeenCalled();
+    });
+
+    it("should res.status(401) with InsufficientAccessError ", async () => {
+      const mockUser = {
+        id: 2,
+        name: "Arby",
+        email: "Arby@binar.co.id",
+        encryptedPassword:
+          "$2a$10$a/Nv0ULUmsfDUDbgf7991uENTqBMEA0LbcUcQ3U4xElPZumsV.Kmy",
+        roleId: 1,
+      };
+      const mockRole = { id: 1, name: "COSTUMER" };
+
+      const roleModel = jest.fn().mockReturnValue(null);
+      const userModel = jest.fn().mockReturnValue(null);
+
+      const controller = new AuthenticationController({
+        roleModel,
+        userModel,
+        bcrypt,
+        jwt,
+      });
+      const mockToken = controller.createTokenFromUser(mockUser, mockRole);
+      const mockReq = {
+        headers: {
+          authorization: "Bearer " + mockToken,
+        },
+      };
+      const mockRes = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn().mockReturnThis(),
+      };
+      const mockNext = jest.fn();
+
+      const authorizeCustomer = controller.authorize("ADMIN");
+      await authorizeCustomer(mockReq, mockRes, mockNext);
+
+      const err = new InsufficientAccessError("COSTUMER");
+
+      expect(mockRes.status).toHaveBeenCalledWith(401);
+      expect(mockRes.json).toHaveBeenCalledWith({
         error: {
-          name: "JsonWebTokenError",
-          message: "jwt must be provided",
-          details: null,
+          name: err.name,
+          message: err.message,
+          details: err.details,
         },
       });
     });
+    it("should res.status(401) with error token wrong.", async () => {
+      const mockUser = {
+        id: 2,
+        name: "Arby",
+        email: "Arby@binar.co.id",
+        encryptedPassword:
+          "$2a$10$a/Nv0ULUmsfDUDbgf7991uENTqBMEA0LbcUcQ3U4xElPZumsV.Kmy",
+        roleId: 1,
+      };
+      const mockRole = { id: 1, name: "COSTUMER" };
+      const roleModel = jest.fn().mockReturnValue(null);
+      const userModel = jest.fn().mockReturnValue(null);
+      const controller = new AuthenticationController({
+        roleModel,
+        userModel,
+        bcrypt,
+        jwt,
+      });
+      const mockToken = controller.createTokenFromUser(mockUser, mockRole);
+      const mockReq = {
+        headers: {
+          authorization: "Bearer " + mockToken + "alsdnalnjd",
+        },
+      };
+      const mockRes = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn().mockReturnThis(),
+      };
+      const mockNext = jest.fn();
 
-
+      const authorizeCustomer = controller.authorize("ADMIN");
+      await authorizeCustomer(mockReq, mockRes, mockNext);
+      expect(mockRes.status).toHaveBeenCalledWith(401);
+    });
   });
 
   describe("handleLogin", () => {
@@ -159,6 +228,7 @@ describe("AuthenticationController", () => {
       });
 
       await authentication.handleLogin(mockRequest, mockResponse, mockNext);
+      
 
       expect(mockUserModel.findOne).toHaveBeenCalledWith({
         where: {
@@ -205,7 +275,7 @@ describe("AuthenticationController", () => {
         json: jest.fn().mockReturnThis(),
       };
 
-      const mockNext = ({});
+      const mockNext = {};
 
       const authentication = new AuthenticationController({
         userModel: mockUserModel,
@@ -234,8 +304,6 @@ describe("AuthenticationController", () => {
 
       expect(mockResponse.json).toHaveBeenCalledWith(error);
     });
-
-    
   });
 
   describe("#handleRegister", () => {
@@ -271,7 +339,7 @@ describe("AuthenticationController", () => {
         status: jest.fn().mockReturnThis(),
         json: jest.fn().mockReturnThis(),
       };
-      const mockNext = ({});
+      const mockNext = {};
 
       const authentication = new AuthenticationController({
         userModel: mockUserModel,
@@ -296,53 +364,44 @@ describe("AuthenticationController", () => {
     });
 
     // it("should return status 422 status and json error message", async () => {
-    //   const mockUser = new User({
-    //     id: 5,
-    //     name: "Arby",
-    //     email: "Arby@binar.co.id",
-    //     encryptedPassword: "$2a$10$a/Nv0ULUmsfDUDbgf7991uENTqBMEA0LbcUcQ3U4xElPZumsV.Kmy",
-    //     roleId: 1,
-    //   });
 
-    //   const mockRole = new Role({ id: 1, name: "CUSTOMER" });
-
-    //   const mockUserModel = {
-    //     findAll: jest.fn().mockReturnValue({
-    //       ...mockUser.dataValues,
-    //     }),
+    //   const mockRole = {
+    //     id: 1,
+    //     name: "COSTUMER",
     //   };
-
     //   const mockRoleModel = {
-    //     findAll: jest.fn().mockReturnValue(mockRole.name),
+    //     findOne: jest.fn().mockReturnValue(mockRole),
     //   };
-
-    //   const mockRequest = {
+    //   const mockReq = {
     //     body: {
     //       name: "Arby",
     //       email: "Arby@binar.co.id",
     //       password: "123456",
     //     },
     //   };
-
-    //   const mockResponse = {
+    //   const mockRes = {
     //     status: jest.fn().mockReturnThis(),
     //     json: jest.fn().mockReturnThis(),
     //   };
-
     //   const mockNext = jest.fn();
 
-    //   const authentication = new AuthenticationController({
+    //   const mockUserModel = {
+    //     findOne: jest.fn().mockReturnValue(true),
+    //   };
+    //   const controller = new AuthenticationController({
     //     userModel: mockUserModel,
     //     roleModel: mockRoleModel,
     //     bcrypt,
     //     jwt,
     //   });
-    //   const error = new WrongPasswordError();
 
-    //   await authentication.handleRegister(mockRequest, mockResponse, mockNext);
+    //   await controller.handleRegister(
+    //       mockReq, mockRes, mockNext,
+    //   );
 
-    //   expect(mockResponse.status).toHaveBeenCalledWith(422);
-    //   expect(mockResponse.json).toHaveBeenCalledWith(error);
+    //   expect(mockUserModel.findOne).toHaveBeenCalled();
+    //   expect(mockRes.status).toHaveBeenCalledWith(422);
+
     // });
   });
 
@@ -352,7 +411,8 @@ describe("AuthenticationController", () => {
         id: 5,
         name: "Arby",
         email: "Arby@binar.ac.id",
-        encryptedPassword: "$2a$10$a/Nv0ULUmsfDUDbgf7991uENTqBMEA0LbcUcQ3U4xElPZumsV.Kmy",
+        encryptedPassword:
+          "$2a$10$a/Nv0ULUmsfDUDbgf7991uENTqBMEA0LbcUcQ3U4xElPZumsV.Kmy",
         roleId: 1,
       });
 
@@ -395,42 +455,45 @@ describe("AuthenticationController", () => {
       expect(mockResponse.json).toHaveBeenCalledWith(mockUser);
     });
 
-    // it("should return 404 status and an error message", async () => {
-    //   const mockUserModel = {
-    //     findByPk: jest.fn().mockReturnValue(null),
-    //   };
+    it(
+      "should res.status(404) with RecordNotFoundError " + "if user not found.",
+      async () => {
+        const mockUser = {
+          id: 2,
+          name: "Arby",
+          email: "Arby@binar.co.id",
+          encryptedPassword: "$2jakdbqudqiuy7981y9ge9g1dnqdiq9112g.dkah",
+          roleId: 1,
+        };
+        const mockReq = {
+          user: mockUser,
+        };
+        const mockRes = {
+          status: jest.fn().mockReturnThis(),
+          json: jest.fn().mockReturnThis(),
+        };
 
-    //   const mockRole = new Role({ id: 1, name: "CUSTOMER" });
+        const mockUserModel = {
+          findByPk: jest.fn().mockReturnValue(false),
+        };
+        const mockRoleModel = {
+          findByPk: jest.fn().mockReturnValue(false),
+        };
 
-    //   const mockRoleModel = {
-    //     ...mockRole.dataValues,
-    //     findByPk: jest.fn().mockReturnValue(mockRole),
-    //   };
+        const controller = new AuthenticationController({
+          userModel: mockUserModel,
+          roleModel: mockRoleModel,
+          bcrypt,
+          jwt,
+        });
 
-    //   const mockRequest = {
-    //     user: {
-    //       id: 5,
-    //     },
-    //   };
+        await controller.handleGetUser(mockReq, mockRes);
+        const expectedErr = new RecordNotFoundError(mockUser.name);
 
-    //   const mockResponse = {
-    //     status: jest.fn().mockReturnThis(),
-    //     json: jest.fn().mockReturnThis(),
-    //   };
-    //   const mockNext = jest.fn();
-
-    //   const authentication = new AuthenticationController({
-    //     userModel: mockUserModel,
-    //     roleModel: mockRoleModel,
-    //     bcrypt,
-    //     jwt,
-    //   });
-
-    //   await authentication.handleGetUser(mockRequest, mockResponse, mockNext);
-
-    //   expect(mockUserModel.findByPk).toHaveBeenCalledWith(mockRequest.user.id);
-    //   expect(mockResponse.status).toHaveBeenCalledWith(404);
-    // });
+        expect(mockRes.status).toHaveBeenCalledWith(404);
+        expect(mockRes.json).toHaveBeenCalledWith(expectedErr);
+      }
+    );
   });
 
   describe("#createTokenFromUser", () => {
@@ -439,7 +502,8 @@ describe("AuthenticationController", () => {
         id: 2,
         name: "Arby",
         email: "Arby@binar.co.id",
-        encryptedPassword: "$2a$10$a/Nv0ULUmsfDUDbgf7991uENTqBMEA0LbcUcQ3U4xElPZumsV.Kmy",
+        encryptedPassword:
+          "$2a$10$a/Nv0ULUmsfDUDbgf7991uENTqBMEA0LbcUcQ3U4xElPZumsV.Kmy",
         roleId: 1,
       });
 
@@ -464,7 +528,8 @@ describe("AuthenticationController", () => {
         id: 2,
         name: "Arby",
         email: "Arby@binar.co.id",
-        encryptedPassword: "$2a$10$a/Nv0ULUmsfDUDbgf7991uENTqBMEA0LbcUcQ3U4xElPZumsV.Kmy",
+        encryptedPassword:
+          "$2a$10$a/Nv0ULUmsfDUDbgf7991uENTqBMEA0LbcUcQ3U4xElPZumsV.Kmy",
         roleId: 1,
       });
 
@@ -491,7 +556,8 @@ describe("AuthenticationController", () => {
         id: 2,
         name: "Arby",
         email: "Arby@binar.co.id",
-        encryptedPassword: "$2a$10$a/Nv0ULUmsfDUDbgf7991uENTqBMEA0LbcUcQ3U4xElPZumsV.Kmy",
+        encryptedPassword:
+          "$2a$10$a/Nv0ULUmsfDUDbgf7991uENTqBMEA0LbcUcQ3U4xElPZumsV.Kmy",
         roleId: 1,
       });
 
@@ -510,7 +576,10 @@ describe("AuthenticationController", () => {
         jwt,
       });
 
-      const encryptedPassword = authentication.encryptPassword(mockRequest.body.password, 10);
+      const encryptedPassword = authentication.encryptPassword(
+        mockRequest.body.password,
+        10
+      );
 
       expect(encryptedPassword).toEqual(expect.any(String));
     });
@@ -541,11 +610,12 @@ describe("AuthenticationController", () => {
         jwt,
       });
 
-      authentication.verifyPassword(mockUser.encryptedPassword, mockRequest.body.password);
+      authentication.verifyPassword(
+        mockUser.encryptedPassword,
+        mockRequest.body.password
+      );
 
       expect(mockUser.encryptedPassword).toEqual(mockRequest.body.password);
     });
   });
-
-
 });
