@@ -1,11 +1,11 @@
 const db = require("../app/models");
 
 const {
-  DB_USER = "postgres",
-  DB_PASSWORD = "IRqjQbJHXJmkNrLUiNh5",
-  DB_NAME = "railway",
-  DB_HOST = "containers-us-west-112.railway.app",
-  DB_PORT = "7845",
+  DB_USER = "",
+  DB_PASSWORD = "",
+  DB_NAME = "",
+  DB_HOST = "",
+  DB_PORT = "",
 } = process.env;
 
 module.exports = {
