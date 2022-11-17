@@ -1,16 +1,18 @@
+const db = require("../app/models");
+
 const {
   DB_USER = "postgres",
-  DB_PASSWORD = "arby2002",
-  DB_NAME = "bcr",
-  DB_HOST = "127.0.0.1",
-  DB_PORT = "5432",
+  DB_PASSWORD = "IRqjQbJHXJmkNrLUiNh5",
+  DB_NAME = "railway",
+  DB_HOST = "containers-us-west-112.railway.app",
+  DB_PORT = "7845",
 } = process.env;
 
 module.exports = {
   development: {
     username: DB_USER,
     password: DB_PASSWORD,
-    database: `${DB_NAME}_development`,
+    database: DB_NAME,
     host: DB_HOST,
     port: DB_PORT,
     dialect: "postgres"
@@ -18,7 +20,7 @@ module.exports = {
   test: {
     username: DB_USER,
     password: DB_PASSWORD,
-    database: `${DB_NAME}_test`,
+    database: DB_NAME,
     host: DB_HOST,
     port: DB_PORT,
     dialect: "postgres"
@@ -26,7 +28,7 @@ module.exports = {
   production: {
     username: DB_USER,
     password: DB_PASSWORD,
-    database: `${DB_NAME}_production`,
+    database: DB_NAME,
     host: DB_HOST,
     port: DB_PORT,
     dialect: "postgres"
