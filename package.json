@@ -10,6 +10,7 @@
     "db:drop": "sequelize db:drop",
     "db:migrate": "sequelize db:migrate",
     "db:seed": "sequelize db:seed:undo:all && sequelize db:seed:all",
+    "db:setup": "yarn db:create && yarn db:migrate && yarn db:seed",
     "eslint": "eslint .",
     "test": "cross-env NODE_ENV=test jest --testTimeout=10000",
     "pretest": "cross-env NODE_ENV=test npm run db:reset",
