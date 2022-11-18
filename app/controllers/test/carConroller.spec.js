@@ -368,6 +368,58 @@ describe("CarController", () => {
   });
 
   describe("handleUpdateCar", () => {
+    it("should res.status(200) and return updated car on success.", async () => {
+      const defaultMockCar = {
+        id: 1,
+        name: "Lambo",
+        price: "10000000",
+        size: "SMALL",
+        image:
+          "https://www.google.com/url?sa=i&url=https%3A%2F%2Fid.wikipedia.org%2Fwiki%2FBajaj&psig=AOvVaw2YLBkKGo8Z-OCJze25x5hf&ust=1668538058650000&source=images&cd=vfe&ved=0CBAQjRxqFwoTCPiQoOOqrvsCFQAAAAAdAAAAABAD",
+        isCurrentlyRented: false,
+        createdAt: "2022-11-1 09:44:35",
+        updatedAt: "2022-11-2 11:00:00",
+      };
+
+      const mockCarReq = {
+        name: "Lambo",
+        price: "10000000",
+        size: "SMALL",
+        image:
+          "https://www.google.com/url?sa=i&url=https%3A%2F%2Fid.wikipedia.org%2Fwiki%2FBajaj&psig=AOvVaw2YLBkKGo8Z-OCJze25x5hf&ust=1668538058650000&source=images&cd=vfe&ved=0CBAQjRxqFwoTCPiQoOOqrvsCFQAAAAAdAAAAABAD",
+        isCurrentlyRented: false,
+      };
+      const mockReq = {
+        body: mockCarReq,
+        params: {
+          id: 1,
+        },
+      };
+      const mockRes = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn().mockReturnThis(),
+      };
+
+      const mockCarModel = {
+        findByPk: jest.fn().mockReturnValue(defaultMockCar),
+        update: jest.fn().mockReturnThis(),
+      };
+      const mockUserCarModel = {};
+
+      const controller = new CarController({
+        carModel: mockCarModel,
+        userCarModel: mockUserCarModel,
+      });
+
+      await controller.handleUpdateCar(mockReq, mockRes);
+
+      expect(mockCarModel.findByPk).toHaveBeenCalled();
+      expect(mockCarModel.update).toHaveBeenCalledWith(mockCarReq, {
+        where: { id: mockReq.params.id },
+      });
+      expect(mockRes.status).toHaveBeenCalledWith(200);
+    });
+
     // it("should update a car and status 200", async () => {
     //   const mockCar = new Car({
     //     id: 1,
@@ -474,10 +526,18 @@ describe("CarController", () => {
   });
 
   describe("#handleDeleteCar", () => {
-    it("should delete a car", async () => {
-      const mockCarModel = {
-        destroy: jest.fn().mockReturnValue(1),
-      };
+    it("should delete a car and resr.status(204)", async () => {
+      const mockCar = new Car({
+        id: 1,
+        name: "Lambo",
+        price: "10000000",
+        size: "SMALL",
+        image:
+          "https://www.google.com/url?sa=i&url=https%3A%2F%2Fid.wikipedia.org%2Fwiki%2FBajaj&psig=AOvVaw2YLBkKGo8Z-OCJze25x5hf&ust=1668538058650000&source=images&cd=vfe&ved=0CBAQjRxqFwoTCPiQoOOqrvsCFQAAAAAdAAAAABAD",
+        isCurrentlyRented: false,
+        createdAt: "2022-11-1 09:44:35",
+        updatedAt: "2022-11-2 11:00:00",
+      });
 
       const mockRequest = {
         params: {
@@ -486,20 +546,50 @@ describe("CarController", () => {
       };
 
       const mockResponse = {
-        status: jest.fn().mockReturnThis(),
-        json: jest.fn().mockReturnThis(),
-        end: jest.fn().mockReturnThis(),
+        status: jest.fn().mockReturnValue({
+          end: jest.fn(),
+        }),
       };
 
-      const carController = new CarController({
+      const mockDestroy = jest.fn().mockReturnValue(1);
+      const mockCarModel = {
+        findByPk: jest.fn().mockReturnValue({
+          ...mockCar,
+          destroy: mockDestroy,
+        }),
+      };
+
+      const controller = new CarController({
         carModel: mockCarModel,
+        userCarModel: {},
       });
+      await controller.handleDeleteCar(mockRequest, mockResponse);
 
-      await carController.handleDeleteCar(mockRequest, mockResponse);
-
-      expect(mockCarModel.destroy).toHaveBeenCalledWith(mockRequest.params.id);
+      expect(mockDestroy).toHaveBeenCalled();
       expect(mockResponse.status).toHaveBeenCalledWith(204);
-      expect(mockResponse.end).toHaveBeenCalled();
+    });
+
+    it("should res.status(404) ", async () => {
+      const mockRequest = {
+        params: {
+          id: 1,
+        },
+      };
+      const mockResponse = {
+        status: jest.fn().mockReturnValue({
+          end: jest.fn(),
+        }),
+      };
+      const mockCarModel = {
+        findByPk: jest.fn().mockReturnValue(false),
+      };
+      const controller = new CarController({
+        carModel: mockCarModel,
+        userCarModel: {},
+      });
+      await controller.handleDeleteCar(mockRequest, mockResponse);
+
+      expect(mockResponse.status).toHaveBeenCalledWith(404);
     });
   });
 
